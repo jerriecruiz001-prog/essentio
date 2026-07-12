@@ -1,0 +1,104 @@
+import Script from "next/script";
+import "../styles.css";
+
+const siteUrl = "https://essentio.ng";
+const title = "Essentio™ — Premium Smart Wallets & Travel Cases | JCRUIZ & CO";
+const description =
+  "Essentio by JCRUIZ & CO. Premium leather smart wallets and travel cases with built-in power banks, RFID blocking, MagSafe charging, and NFC technology. Engineered for the modern professional.";
+
+export const metadata = {
+  metadataBase: new URL(siteUrl),
+  title,
+  description,
+  keywords: [
+    "smart wallet",
+    "travel case",
+    "power bank wallet",
+    "RFID wallet",
+    "MagSafe wallet",
+    "NFC wallet",
+    "premium wallet Nigeria",
+    "Essentio",
+    "JCRUIZ",
+  ],
+  authors: [{ name: "JCRUIZ & CO" }],
+  robots: "index, follow",
+  alternates: {
+    canonical: siteUrl,
+  },
+  openGraph: {
+    type: "website",
+    title: "Essentio™ — Premium Smart Travel Essentials",
+    description:
+      "Where premium leather meets smart technology. Power, security, and presence — engineered into the essentials you carry every day.",
+    url: siteUrl,
+    siteName: "Essentio by JCRUIZ & CO",
+    images: [{ url: "/images/og-image.jpg" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Essentio™ — Premium Smart Travel Essentials",
+    description:
+      "Where premium leather meets smart technology. Power, security, and presence — engineered into the essentials you carry every day.",
+    images: ["/images/og-image.jpg"],
+  },
+  icons: {
+    icon: "/favicon.svg",
+  },
+};
+
+const productSchema = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "Essentio Smart Wallet",
+    brand: { "@type": "Brand", name: "Essentio by JCRUIZ & CO" },
+    description:
+      "Premium leather smart wallet with 8000mAh power bank, MagSafe wireless charging, RFID blocking, NFC card, and tracker compatibility.",
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "NGN",
+      price: "70000",
+      availability: "https://schema.org/InStock",
+      url: "https://essentio.ng/#smart-wallet",
+    },
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "Essentio Transit Case",
+    brand: { "@type": "Brand", name: "Essentio by JCRUIZ & CO" },
+    description:
+      "Premium leather passport and travel case with 8000mAh power bank, RFID blocking, and tracker compatibility. Designed for international travel.",
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "NGN",
+      price: "65000",
+      availability: "https://schema.org/InStock",
+      url: "https://essentio.ng/#transit-case",
+    },
+  },
+];
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Sora:wght@300;400;500;600&display=swap"
+          rel="stylesheet"
+        />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {`(function(){try{var t=localStorage.getItem('essentio-theme');if(!t)t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();`}
+        </Script>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+        />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
