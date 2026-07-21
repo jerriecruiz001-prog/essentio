@@ -90,7 +90,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
         <Script id="theme-init" strategy="beforeInteractive">
-          {`(function(){try{var t=localStorage.getItem('essentio-theme');if(!t)t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();`}
+          {`(function(){try{if(localStorage.getItem('essentio-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();`}
         </Script>
         <script
           type="application/ld+json"

@@ -37,13 +37,6 @@ export default function ClientInteractions() {
       }
     };
 
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleThemeChange = (event) => {
-      if (localStorage.getItem("essentio-theme")) return;
-      document.documentElement.toggleAttribute("data-theme", event.matches);
-      if (event.matches) document.documentElement.setAttribute("data-theme", "dark");
-    };
-
     const handleFaqClick = (event) => {
       const question = event.currentTarget;
       const item = question.parentElement;
@@ -105,7 +98,6 @@ export default function ClientInteractions() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     navToggle.addEventListener("click", handleMenuToggle);
     themeToggleBtn.addEventListener("click", handleThemeToggle);
-    mediaQuery.addEventListener("change", handleThemeChange);
     closeLinks.forEach((link) => link.addEventListener("click", closeMobileMenu));
     faqQuestions.forEach((question) => question.addEventListener("click", handleFaqClick));
     anchorLinks.forEach((anchor) => anchor.addEventListener("click", handleAnchorClick));
@@ -114,7 +106,6 @@ export default function ClientInteractions() {
       window.removeEventListener("scroll", handleScroll);
       navToggle.removeEventListener("click", handleMenuToggle);
       themeToggleBtn.removeEventListener("click", handleThemeToggle);
-      mediaQuery.removeEventListener("change", handleThemeChange);
       closeLinks.forEach((link) => link.removeEventListener("click", closeMobileMenu));
       faqQuestions.forEach((question) => question.removeEventListener("click", handleFaqClick));
       anchorLinks.forEach((anchor) => anchor.removeEventListener("click", handleAnchorClick));
