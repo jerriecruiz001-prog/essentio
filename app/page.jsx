@@ -12,23 +12,116 @@ const products = [
     id: "smart-wallet",
     eyebrow: "Smart Wallet",
     title: "Power, cards, and security in one everyday carry.",
-    price: "₦70,000",
-    image: "/images/smart-wallet.png",
-    alt: "Black premium leather smart wallet with card slots",
+    price: "₦60,000",
+    image: "/images/smart-wallet-black-front.webp",
+    alt: "Black premium leather bifold smart wallet with card slots",
     description:
-      "A premium leather wallet with built-in 8000mAh power, RFID protection, MagSafe-compatible charging, NFC sharing, and tracker-ready storage.",
-    features: ["8000mAh power bank", "RFID-blocking lining", "NFC card included"],
+      "A premium leather bifold wallet with built-in 8000mAh power, RFID protection, and MagSafe-compatible charging.",
+    features: ["8000mAh power bank", "RFID-blocking lining", "MagSafe wireless charging"],
+    variants: [
+      {
+        name: "Black",
+        colorHex: "#1c1a18",
+        images: [
+          {
+            src: "/images/smart-wallet-black-front.webp",
+            alt: "Essentio Smart Wallet in black leather, front view",
+            label: "Front",
+          },
+          {
+            src: "/images/smart-wallet-black-inside.webp",
+            alt: "Essentio Smart Wallet in black leather, interior view with power bank",
+            label: "Inside",
+          },
+        ],
+      },
+      {
+        name: "Brown",
+        colorHex: "#7a4a30",
+        images: [
+          {
+            src: "/images/smart-wallet-brown-front.webp",
+            alt: "Essentio Smart Wallet in brown leather, front view",
+            label: "Front",
+          },
+          {
+            src: "/images/smart-wallet-brown-inside.webp",
+            alt: "Essentio Smart Wallet in brown leather, interior view with power bank",
+            label: "Inside",
+          },
+        ],
+      },
+    ],
   },
   {
-    id: "transit-case",
-    eyebrow: "Transit Case",
+    id: "passport-holder",
+    eyebrow: "Passport Holder",
     title: "A calmer way to move through airports.",
-    price: "₦65,000",
-    image: "/images/transit-case.png",
-    alt: "Black premium leather smart passport holder and travel case",
+    price: "₦55,000",
+    image: "/images/passport-holder-black.webp",
+    alt: "Black premium leather smart passport holder",
     description:
-      "A structured leather travel case for passports, cards, boarding documents, and backup power while you move between cities.",
-    features: ["Passport-ready layout", "USB-C charging", "Tracker compatible"],
+      "A structured leather passport holder for passports, cards, boarding documents, and backup power while you move between cities.",
+    features: ["Passport-ready layout", "USB-C charging", "Works with Apple Find My"],
+    variants: [
+      {
+        name: "Black",
+        colorHex: "#1c1a18",
+        images: [
+          {
+            src: "/images/passport-holder-black.webp",
+            alt: "Essentio Passport Holder in black leather",
+            label: "Front",
+          },
+        ],
+      },
+      {
+        name: "Brown",
+        colorHex: "#d1652f",
+        images: [
+          {
+            src: "/images/passport-holder-brown.webp",
+            alt: "Essentio Passport Holder in burnt orange leather",
+            label: "Front",
+          },
+        ],
+      },
+    ],
+  },
+];
+
+const comparisons = [
+  {
+    eyebrow: "Wallet",
+    regularTitle: "A regular wallet",
+    regularPoints: [
+      "Just holds cards and cash",
+      "No backup power if your phone dies",
+      "No protection against card skimming",
+      "One more separate item to carry and charge",
+    ],
+    essentioTitle: "Essentio Smart Wallet",
+    essentioPoints: [
+      "8000mAh power bank built into the leather",
+      "RFID-blocking lining protects your cards",
+      "MagSafe-compatible wireless charging",
+      "One premium item replaces three",
+    ],
+  },
+  {
+    eyebrow: "Passport holder",
+    regularTitle: "A regular passport holder",
+    regularPoints: [
+      "Only stores your documents",
+      "No power when you need it most at the gate",
+      "Bulky once you add a separate charger",
+    ],
+    essentioTitle: "Essentio Passport Holder",
+    essentioPoints: [
+      "Passport, cards, and boarding pass in one layout",
+      "USB-C charging built in for travel days",
+      "Works with Apple Find My, so it's never lost",
+    ],
   },
 ];
 
@@ -73,13 +166,39 @@ function CheckIcon() {
   );
 }
 
+function CrossIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
+function FindMyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none" />
+      <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21" />
+    </svg>
+  );
+}
+
+function featureIcon(feature) {
+  return feature.includes("Find My") ? <FindMyIcon /> : <CheckIcon />;
+}
+
 export default function Home() {
   const [activeProductId, setActiveProductId] = useState(products[0].id);
   const [previewProduct, setPreviewProduct] = useState(null);
+  const [variantIndex, setVariantIndex] = useState(0);
+  const [imageIndex, setImageIndex] = useState(0);
   const activeProduct = useMemo(
     () => products.find((product) => product.id === activeProductId) ?? products[0],
     [activeProductId]
   );
+  const activeVariant = previewProduct?.variants[variantIndex] ?? previewProduct?.variants[0];
+  const activeImage = activeVariant?.images[imageIndex] ?? activeVariant?.images[0];
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -97,6 +216,11 @@ export default function Home() {
     return () => {
       document.body.style.overflow = "";
     };
+  }, [previewProduct]);
+
+  useEffect(() => {
+    setVariantIndex(0);
+    setImageIndex(0);
   }, [previewProduct]);
 
   return (
@@ -257,7 +381,7 @@ export default function Home() {
                   <ul>
                     {product.features.map((feature) => (
                       <li key={feature}>
-                        <CheckIcon />
+                        {featureIcon(feature)}
                         {feature}
                       </li>
                     ))}
@@ -269,6 +393,44 @@ export default function Home() {
                     </button>
                   </div>
                 </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="section" id="why-essentio">
+          <div className="container">
+            <div className="section__header reveal">
+              <p className="eyebrow">Why Essentio</p>
+              <h2>Not just another wallet. Not just another passport holder.</h2>
+            </div>
+
+            <div className="compare-stack">
+              {comparisons.map((item) => (
+                <div className="compare-grid reveal" key={item.eyebrow}>
+                  <div className="compare-card">
+                    <p className="eyebrow">{item.regularTitle}</p>
+                    <ul>
+                      {item.regularPoints.map((point) => (
+                        <li key={point}>
+                          <CrossIcon />
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="compare-card compare-card--essentio">
+                    <p className="eyebrow">{item.essentioTitle}</p>
+                    <ul>
+                      {item.essentioPoints.map((point) => (
+                        <li key={point}>
+                          <CheckIcon />
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -298,7 +460,7 @@ export default function Home() {
               <div>
                 <span>03</span>
                 <h3>Designed to stay found</h3>
-                <p>Tracker-ready storage helps you keep tabs on your essentials.</p>
+                <p>The Passport Holder works with Apple Find My, so you always know where it is.</p>
               </div>
             </div>
           </div>
@@ -379,7 +541,47 @@ export default function Home() {
               Close
             </button>
             <div className="buy-modal__image">
-              <Image src={previewProduct.image} alt={previewProduct.alt} fill sizes="(max-width: 900px) 100vw, 48vw" />
+              <Image
+                key={activeImage.src}
+                src={activeImage.src}
+                alt={activeImage.alt}
+                fill
+                sizes="(max-width: 900px) 100vw, 48vw"
+              />
+              <div className="buy-modal__gallery">
+                {previewProduct.variants.length > 1 ? (
+                  <div className="buy-modal__swatches" aria-label="Choose color">
+                    {previewProduct.variants.map((variant, index) => (
+                      <button
+                        key={variant.name}
+                        type="button"
+                        className={index === variantIndex ? "active" : ""}
+                        style={{ "--swatch": variant.colorHex }}
+                        aria-label={variant.name}
+                        aria-pressed={index === variantIndex}
+                        onClick={() => {
+                          setVariantIndex(index);
+                          setImageIndex(0);
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+                {activeVariant.images.length > 1 ? (
+                  <div className="buy-modal__thumbs" aria-label="Choose view">
+                    {activeVariant.images.map((image, index) => (
+                      <button
+                        key={image.label}
+                        type="button"
+                        className={index === imageIndex ? "active" : ""}
+                        onClick={() => setImageIndex(index)}
+                      >
+                        {image.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
             <div className="buy-modal__content">
               <p className="eyebrow">{previewProduct.eyebrow}</p>
@@ -388,7 +590,7 @@ export default function Home() {
               <ul>
                 {previewProduct.features.map((feature) => (
                   <li key={feature}>
-                    <CheckIcon />
+                    {featureIcon(feature)}
                     {feature}
                   </li>
                 ))}

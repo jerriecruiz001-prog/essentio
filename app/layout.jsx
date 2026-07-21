@@ -2,9 +2,9 @@ import Script from "next/script";
 import "../styles.css";
 
 const siteUrl = "https://essentio.ng";
-const title = "Essentio™ — Premium Smart Wallets & Travel Cases | JCRUIZ & CO";
+const title = "Essentio™ — Premium Smart Wallets & Passport Holders | JCRUIZ & CO";
 const description =
-  "Essentio by JCRUIZ & CO. Premium leather smart wallets and travel cases with built-in power banks, RFID blocking, MagSafe charging, and NFC technology. Engineered for the modern professional.";
+  "Essentio by JCRUIZ & CO. Premium leather smart wallets and passport holders with built-in power banks, RFID blocking, and MagSafe charging. Engineered for the modern professional.";
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
@@ -12,11 +12,10 @@ export const metadata = {
   description,
   keywords: [
     "smart wallet",
-    "travel case",
+    "passport holder",
     "power bank wallet",
     "RFID wallet",
     "MagSafe wallet",
-    "NFC wallet",
     "premium wallet Nigeria",
     "Essentio",
     "JCRUIZ",
@@ -54,11 +53,11 @@ const productSchema = [
     name: "Essentio Smart Wallet",
     brand: { "@type": "Brand", name: "Essentio by JCRUIZ & CO" },
     description:
-      "Premium leather smart wallet with 8000mAh power bank, MagSafe wireless charging, RFID blocking, NFC card, and tracker compatibility.",
+      "Premium leather smart wallet with 8000mAh power bank, MagSafe wireless charging, and RFID blocking.",
     offers: {
       "@type": "Offer",
       priceCurrency: "NGN",
-      price: "70000",
+      price: "60000",
       availability: "https://schema.org/InStock",
       url: "https://essentio.ng/#smart-wallet",
     },
@@ -66,16 +65,16 @@ const productSchema = [
   {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: "Essentio Transit Case",
+    name: "Essentio Passport Holder",
     brand: { "@type": "Brand", name: "Essentio by JCRUIZ & CO" },
     description:
-      "Premium leather passport and travel case with 8000mAh power bank, RFID blocking, and tracker compatibility. Designed for international travel.",
+      "Premium leather passport holder with 8000mAh power bank, RFID blocking, and Apple Find My compatibility. Designed for international travel.",
     offers: {
       "@type": "Offer",
       priceCurrency: "NGN",
-      price: "65000",
+      price: "55000",
       availability: "https://schema.org/InStock",
-      url: "https://essentio.ng/#transit-case",
+      url: "https://essentio.ng/#passport-holder",
     },
   },
 ];
