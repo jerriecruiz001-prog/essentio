@@ -1129,12 +1129,19 @@ h3 {
 
   .nav__mobile-menu {
     position: fixed;
-    inset: 76px 0 0;
+    top: 76px;
+    left: 0;
+    right: 0;
+    height: calc(100vh - 76px);
+    height: calc(100dvh - 76px);
     display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 28px;
+    padding: 32px 20px 48px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     background: var(--bg);
     border-top: 1px solid var(--line);
   }
@@ -1198,7 +1205,12 @@ h3 {
   }
 
   .nav__mobile-menu {
-    inset: 68px 0 0;
+    top: 68px;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    height: calc(100vh - 68px);
+    height: calc(100dvh - 68px);
   }
 
   h1 {
