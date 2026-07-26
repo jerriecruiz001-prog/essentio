@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useEffect } from "react";
 
@@ -8,7 +8,7 @@ export default function ClientInteractions() {
     const navToggle = document.getElementById("navToggle");
     const themeToggleBtn = document.getElementById("themeToggle");
 
-    if (!nav || !navToggle || !themeToggleBtn) return undefined;
+    if (!nav || !navToggle) return undefined;
 
     const handleScroll = () => {
       nav.classList.toggle("scrolled", window.scrollY > 50);
@@ -97,7 +97,7 @@ export default function ClientInteractions() {
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     navToggle.addEventListener("click", handleMenuToggle);
-    themeToggleBtn.addEventListener("click", handleThemeToggle);
+    themeToggleBtn?.addEventListener("click", handleThemeToggle);
     closeLinks.forEach((link) => link.addEventListener("click", closeMobileMenu));
     faqQuestions.forEach((question) => question.addEventListener("click", handleFaqClick));
     anchorLinks.forEach((anchor) => anchor.addEventListener("click", handleAnchorClick));
@@ -105,7 +105,7 @@ export default function ClientInteractions() {
     return () => {
       window.removeEventListener("scroll", handleScroll);
       navToggle.removeEventListener("click", handleMenuToggle);
-      themeToggleBtn.removeEventListener("click", handleThemeToggle);
+      themeToggleBtn?.removeEventListener("click", handleThemeToggle);
       closeLinks.forEach((link) => link.removeEventListener("click", closeMobileMenu));
       faqQuestions.forEach((question) => question.removeEventListener("click", handleFaqClick));
       anchorLinks.forEach((anchor) => anchor.removeEventListener("click", handleAnchorClick));

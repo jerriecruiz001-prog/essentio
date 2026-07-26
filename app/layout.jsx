@@ -57,7 +57,8 @@ const productSchema = [
     offers: {
       "@type": "Offer",
       priceCurrency: "NGN",
-      price: "60000",
+      price: "59999",
+      priceValidUntil: "2026-12-31",
       availability: "https://schema.org/InStock",
       url: "https://essentio.ng/#smart-wallet",
     },
@@ -72,7 +73,8 @@ const productSchema = [
     offers: {
       "@type": "Offer",
       priceCurrency: "NGN",
-      price: "55000",
+      price: "54999",
+      priceValidUntil: "2026-12-31",
       availability: "https://schema.org/InStock",
       url: "https://essentio.ng/#passport-holder",
     },

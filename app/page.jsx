@@ -12,7 +12,9 @@ const products = [
     id: "smart-wallet",
     eyebrow: "Smart Wallet",
     title: "Power, cards, and security in one everyday carry.",
-    price: "₦60,000",
+    price: "₦59,999",
+    oldPrice: "₦89,999",
+    discount: "33%",
     image: "/images/smart-wallet-black-front.webp",
     alt: "Black premium leather bifold smart wallet with card slots",
     description:
@@ -57,7 +59,9 @@ const products = [
     id: "passport-holder",
     eyebrow: "Passport Holder",
     title: "A calmer way to move through airports.",
-    price: "₦55,000",
+    price: "₦54,999",
+    oldPrice: "₦84,999",
+    discount: "35%",
     image: "/images/passport-holder-black.webp",
     alt: "Black premium leather smart passport holder",
     description:
@@ -301,8 +305,14 @@ export default function Home() {
                     type="button"
                     onClick={() => setActiveProductId(product.id)}
                   >
-                    <span>{product.eyebrow}</span>
-                    <strong>{product.price}</strong>
+                    <div className="hero__switcher-head">
+                      <span>{product.eyebrow}</span>
+                      <span className="discount-badge discount-badge--sm">-{product.discount}</span>
+                    </div>
+                    <div className="hero__switcher-prices">
+                      <strong>{product.price}</strong>
+                      <em className="price-old price-old--sm">{product.oldPrice}</em>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -327,8 +337,14 @@ export default function Home() {
                 </button>
               ))}
               <div className="hero__caption">
-                <span>{activeProduct.eyebrow}</span>
-                <strong>{activeProduct.price}</strong>
+                <div className="hero__caption-top">
+                  <span>{activeProduct.eyebrow}</span>
+                  <span className="discount-badge discount-badge--sm">-{activeProduct.discount}</span>
+                </div>
+                <div className="hero__caption-prices">
+                  <strong>{activeProduct.price}</strong>
+                  <em className="price-old price-old--sm">{activeProduct.oldPrice}</em>
+                </div>
               </div>
             </div>
           </div>
@@ -387,7 +403,13 @@ export default function Home() {
                     ))}
                   </ul>
                   <div className="product-card__footer">
-                    <span>{product.price}</span>
+                    <div className="product-card__prices">
+                      <div className="price-row">
+                        <span className="price">{product.price}</span>
+                        <span className="discount-badge discount-badge--sm">-{product.discount}</span>
+                      </div>
+                      <span className="price-old">{product.oldPrice}</span>
+                    </div>
                     <button className="btn btn--sm" type="button" onClick={() => setPreviewProduct(product)}>
                       View & buy
                     </button>
@@ -596,7 +618,13 @@ export default function Home() {
                 ))}
               </ul>
               <div className="buy-modal__footer">
-                <span>{previewProduct.price}</span>
+                <div className="buy-modal__prices">
+                  <div className="price-row">
+                    <span className="price price--lg">{previewProduct.price}</span>
+                    <span className="discount-badge discount-badge--lg">-{previewProduct.discount}</span>
+                  </div>
+                  <span className="price-old price-old--lg">{previewProduct.oldPrice}</span>
+                </div>
                 <a href={whatsapp} className="btn" target="_blank" rel="noopener">
                   Buy on WhatsApp
                   <ArrowIcon />
