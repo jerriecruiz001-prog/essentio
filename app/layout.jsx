@@ -29,7 +29,7 @@ export const metadata = {
   },
   openGraph: {
     type: "website",
-    title: "Essentio™ — Premium Smart Travel Essentials",
+    title: "Essentio™ — Premium Everyday & Travel Essentials",
     description:
       "Where premium leather meets smart technology. Power, security, and presence — engineered into the essentials you carry every day.",
     url: siteUrl,
@@ -38,7 +38,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Essentio™ — Premium Smart Travel Essentials",
+    title: "Essentio™ — Premium Everyday & Travel Essentials",
     description:
       "Where premium leather meets smart technology. Power, security, and presence — engineered into the essentials you carry every day.",
     images: ["/images/og-image.jpg"],

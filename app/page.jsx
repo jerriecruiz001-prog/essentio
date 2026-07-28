@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ClientInteractions from "./ClientInteractions";
 import tiktok from "../lib/tiktok";
 
@@ -197,6 +197,122 @@ function featureIcon(feature) {
   return feature.includes("Find My") ? <FindMyIcon /> : <CheckIcon />;
 }
 
+function PassportDemoVideo() {
+  const videoRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return undefined;
+
+    const exitAnyFullscreen = () => {
+      if (document.fullscreenElement === video) {
+        document.exitFullscreen?.().catch(() => {});
+      }
+      if (video.webkitDisplayingFullscreen) {
+        video.webkitExitFullscreen?.();
+      }
+    };
+
+    const blockFullscreen = (event) => {
+      event.preventDefault?.();
+      exitAnyFullscreen();
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          video.muted = true;
+          setIsMuted(true);
+          video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+        } else {
+          video.pause();
+          setIsPlaying(false);
+        }
+      },
+      { threshold: 0.45 }
+    );
+
+    video.addEventListener("webkitbeginfullscreen", blockFullscreen);
+    video.addEventListener("fullscreenchange", exitAnyFullscreen);
+    document.addEventListener("fullscreenchange", exitAnyFullscreen);
+    observer.observe(video);
+
+    return () => {
+      observer.disconnect();
+      video.removeEventListener("webkitbeginfullscreen", blockFullscreen);
+      video.removeEventListener("fullscreenchange", exitAnyFullscreen);
+      document.removeEventListener("fullscreenchange", exitAnyFullscreen);
+    };
+  }, []);
+
+  function togglePlayback() {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    } else {
+      video.pause();
+      setIsPlaying(false);
+    }
+  }
+
+  function toggleMute() {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const nextMuted = !video.muted;
+    video.muted = nextMuted;
+    setIsMuted(nextMuted);
+
+    if (!nextMuted && video.paused) {
+      video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+    }
+  }
+
+  return (
+    <div className="passport-demo">
+      <div className="passport-demo__frame">
+        <video
+          ref={videoRef}
+          className="passport-demo__video"
+          src="/images/essentiopassport_demo.mp4"
+          poster="/images/passport-holder-black.webp"
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          disablePictureInPicture
+          disableRemotePlayback
+          controlsList="nofullscreen nodownload noremoteplayback noplaybackrate"
+          onContextMenu={(event) => event.preventDefault()}
+          aria-label="Essentio Passport Holder product demo"
+        />
+        <div className="passport-demo__controls">
+          <button
+            className="passport-demo__toggle"
+            type="button"
+            onClick={togglePlayback}
+            aria-label={isPlaying ? "Pause passport demo" : "Play passport demo"}
+          >
+            {isPlaying ? "Pause" : "Play"}
+          </button>
+          <button
+            className="passport-demo__toggle"
+            type="button"
+            onClick={toggleMute}
+            aria-label={isMuted ? "Unmute passport demo" : "Mute passport demo"}
+          >
+            {isMuted ? "Sound on" : "Mute"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [activeProductId, setActiveProductId] = useState(products[0].id);
   const [previewProduct, setPreviewProduct] = useState(null);
@@ -332,11 +448,12 @@ export default function Home() {
         <section className="hero">
           <div className="container hero__grid">
             <div className="hero__copy reveal">
-              <p className="eyebrow">Premium smart travel essentials</p>
+              <p className="eyebrow">Premium everyday & travel essentials</p>
               <h1>Carry less. Stay powered. Look composed.</h1>
               <p>
-                Essentio combines premium leather, backup power, RFID protection, and travel-ready
-                organization for professionals who want essentials that feel considered.
+                Essentio combines premium leather, backup power, RFID protection, and everyday
+                organization for professionals who want essentials that feel considered — at home
+                or on the move.
               </p>
               <div className="hero__actions">
                 <button className="btn" type="button" onClick={() => openProductPreview(activeProduct)}>
@@ -466,6 +583,22 @@ export default function Home() {
                   </div>
                 </article>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="section section--quiet" id="passport-demo">
+          <div className="container">
+            <div className="section__header reveal">
+              <p className="eyebrow">Passport Holder</p>
+              <h2>See how Essentio Passport works.</h2>
+              <p>
+                A quick look at the layout, charging, and carry flow — so you can see how it works
+                before you order.
+              </p>
+            </div>
+            <div className="reveal">
+              <PassportDemoVideo />
             </div>
           </div>
         </section>
