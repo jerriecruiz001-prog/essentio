@@ -3,9 +3,14 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import ClientInteractions from "./ClientInteractions";
+import tiktok from "../lib/tiktok";
 
 const whatsapp =
   "https://wa.me/2348000000000?text=Hello%2C%20I%27m%20interested%20in%20Essentio%20products.%20Please%20send%20details.";
+
+function parsePrice(value) {
+  return Number(String(value).replace(/[^\d.]/g, "")) || 0;
+}
 
 const products = [
   {
@@ -204,6 +209,39 @@ export default function Home() {
   const activeVariant = previewProduct?.variants[variantIndex] ?? previewProduct?.variants[0];
   const activeImage = activeVariant?.images[imageIndex] ?? activeVariant?.images[0];
 
+  function openProductPreview(product) {
+    tiktok.viewContent({
+      content_id: product.id,
+      product_name: product.title,
+      category: product.eyebrow,
+      price: parsePrice(product.price),
+      currency: "NGN",
+    });
+    setPreviewProduct(product);
+  }
+
+  function trackWhatsAppOrder(product) {
+    if (!product) {
+      tiktok.contact();
+      return;
+    }
+    const price = parsePrice(product.price);
+    tiktok.initiateCheckout({
+      total_price: price,
+      currency: "NGN",
+      number_of_items: 1,
+      contents: [
+        {
+          content_id: product.id,
+          content_name: product.title,
+          content_category: product.eyebrow,
+          quantity: 1,
+          price,
+        },
+      ],
+    });
+  }
+
   useEffect(() => {
     const timer = window.setInterval(() => {
       setActiveProductId((currentId) => {
@@ -251,7 +289,13 @@ export default function Home() {
                 <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.7 6.7 0 0 0 21 12.8Z" />
               </svg>
             </button>
-            <a href={whatsapp} className="btn btn--sm nav__cta" target="_blank" rel="noopener">
+            <a
+              href={whatsapp}
+              className="btn btn--sm nav__cta"
+              target="_blank"
+              rel="noopener"
+              onClick={() => trackWhatsAppOrder(null)}
+            >
               Order
             </a>
             <button className="nav__toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
@@ -272,7 +316,13 @@ export default function Home() {
           <a href="#faq" data-nav-close>
             FAQ
           </a>
-          <a href={whatsapp} className="btn" target="_blank" rel="noopener">
+          <a
+            href={whatsapp}
+            className="btn"
+            target="_blank"
+            rel="noopener"
+            onClick={() => trackWhatsAppOrder(null)}
+          >
             Order via WhatsApp
           </a>
         </div>
@@ -289,7 +339,7 @@ export default function Home() {
                 organization for professionals who want essentials that feel considered.
               </p>
               <div className="hero__actions">
-                <button className="btn" type="button" onClick={() => setPreviewProduct(activeProduct)}>
+                <button className="btn" type="button" onClick={() => openProductPreview(activeProduct)}>
                   View {activeProduct.eyebrow}
                   <ArrowIcon />
                 </button>
@@ -325,7 +375,7 @@ export default function Home() {
                   className={`hero__slide ${product.id === activeProduct.id ? "active" : ""}`}
                   key={product.id}
                   type="button"
-                  onClick={() => setPreviewProduct(product)}
+                  onClick={() => openProductPreview(product)}
                 >
                   <Image
                     src={product.image}
@@ -384,7 +434,7 @@ export default function Home() {
                   <button
                     className="product-card__image"
                     type="button"
-                    onClick={() => setPreviewProduct(product)}
+                    onClick={() => openProductPreview(product)}
                     aria-label={`Preview ${product.eyebrow}`}
                   >
                     <Image src={product.image} alt={product.alt} fill sizes="(max-width: 900px) 100vw, 50vw" />
@@ -410,7 +460,7 @@ export default function Home() {
                       </div>
                       <span className="price-old">{product.oldPrice}</span>
                     </div>
-                    <button className="btn btn--sm" type="button" onClick={() => setPreviewProduct(product)}>
+                    <button className="btn btn--sm" type="button" onClick={() => openProductPreview(product)}>
                       View & buy
                     </button>
                   </div>
@@ -533,7 +583,13 @@ export default function Home() {
           <div className="container cta__inner reveal">
             <p className="eyebrow">Essentio by JCRUIZ & CO</p>
             <h2>Upgrade the essentials you carry every day.</h2>
-            <a href={whatsapp} className="btn" target="_blank" rel="noopener">
+            <a
+              href={whatsapp}
+              className="btn"
+              target="_blank"
+              rel="noopener"
+              onClick={() => trackWhatsAppOrder(null)}
+            >
               Start order
               <ArrowIcon />
             </a>
@@ -625,7 +681,13 @@ export default function Home() {
                   </div>
                   <span className="price-old price-old--lg">{previewProduct.oldPrice}</span>
                 </div>
-                <a href={whatsapp} className="btn" target="_blank" rel="noopener">
+                <a
+                  href={whatsapp}
+                  className="btn"
+                  target="_blank"
+                  rel="noopener"
+                  onClick={() => trackWhatsAppOrder(previewProduct)}
+                >
                   Buy on WhatsApp
                   <ArrowIcon />
                 </a>

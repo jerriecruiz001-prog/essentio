@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import Script from "next/script";
+import TikTokPixel from "./TikTokPixel";
 import "../styles.css";
 
 const siteUrl = "https://essentio.ng";
@@ -99,7 +101,12 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Suspense fallback={null}>
+          <TikTokPixel />
+        </Suspense>
+      </body>
     </html>
   );
 }
