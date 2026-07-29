@@ -159,6 +159,30 @@ let sdkInstalled = false;
 let backendPlugins: TiktokEventsBackend[] = [];
 const dedupeCache = new Map<TrackedEventKey, number>();
 
+function createEventId(): string {
+  if (
+    typeof globalThis !== "undefined" &&
+    "crypto" in globalThis &&
+    typeof globalThis.crypto?.randomUUID === "function"
+  ) {
+    return globalThis.crypto.randomUUID();
+  }
+  return `tt-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function ensureEventId(
+  params: Record<string, unknown>
+): Record<string, unknown> {
+  const existing = params.event_id;
+  if (typeof existing === "string" && existing.trim()) {
+    return params;
+  }
+  return {
+    ...params,
+    event_id: createEventId(),
+  };
+}
+
 function isBrowser(): boolean {
   return (
     typeof window !== "undefined" && typeof document !== "undefined"
@@ -368,18 +392,19 @@ function track(
     }
     return;
   }
+  const eventParams = ensureEventId(params);
   init();
   const ttq = window.ttq;
   if (ttq && typeof ttq.track === "function") {
     try {
-      ttq.track(event, params);
+      ttq.track(event, eventParams);
     } catch (err) {
       if (process.env.NODE_ENV !== "production") {
         console.warn(`[tiktok] track(${event}) failed:`, err);
       }
     }
   }
-  dispatchToBackends((b) => b.track(event, params));
+  dispatchToBackends((b) => b.track(event, eventParams));
 }
 
 export function viewContent(p: ViewContentParams): void {

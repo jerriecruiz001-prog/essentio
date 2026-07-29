@@ -12,6 +12,32 @@ export default function TikTokPixel(): null {
   const lastSeenRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const unregister = tiktok.registerEventsBackend({
+      async track(event, params) {
+        try {
+          await fetch("/api/tiktok/events", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              event,
+              params: params ?? {},
+            }),
+            keepalive: true,
+          });
+        } catch (err) {
+          if (process.env.NODE_ENV !== "production") {
+            console.error("[TikTokPixel] backend event failed:", err);
+          }
+        }
+      },
+    });
+
+    return unregister;
+  }, []);
+
+  useEffect(() => {
     if (!globalInstalled) {
       try {
         tiktok.init();
