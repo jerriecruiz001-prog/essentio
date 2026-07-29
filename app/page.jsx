@@ -674,6 +674,31 @@ export default function Home() {
                 </article>
               ))}
             </div>
+
+            <aside className="wallet-cross-sell reveal" aria-labelledby="wallet-cross-sell-title">
+              <div className="wallet-cross-sell__media">
+                <video
+                  src="/images/essentiopassport_demo.mp4"
+                  poster="/images/passport-holder-black.webp"
+                  muted
+                  autoPlay
+                  loop
+                  playsInline
+                  preload="metadata"
+                  aria-label="Essentio Passport Holder product preview"
+                />
+              </div>
+              <div className="wallet-cross-sell__copy">
+                <h3 id="wallet-cross-sell-title">Traveling Soon?</h3>
+                <p>
+                  Complete your setup with the Essentio Passport Holder featuring RFID protection
+                  and Apple Find My compatibility.
+                </p>
+              </div>
+              <a href="#passport-holder" className="btn btn--secondary btn--sm">
+                View Passport Holder
+              </a>
+            </aside>
           </div>
         </section>
 
