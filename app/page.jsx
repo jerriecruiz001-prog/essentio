@@ -7,7 +7,7 @@ import tiktok from "../lib/tiktok";
 
 const whatsapp =
   "https://wa.me/2347026064464?text=Hello%2C%20I%27m%20interested%20in%20Essentio%20products.%20Please%20send%20details.";
-const ORDER_REDIRECT_DELAY_MS = 300;
+const ORDER_REDIRECT_DELAY_MS = 700;
 
 function parsePrice(value) {
   return Number(String(value).replace(/[^\d.]/g, "")) || 0;
@@ -21,21 +21,9 @@ function buildTikTokItem(product) {
       content_id: product.id,
       content_name: product.title,
       content_category: product.eyebrow,
+      content_type: "product",
       quantity: 1,
       price,
-    },
-  };
-}
-
-function buildCollectionCheckoutItem() {
-  return {
-    price: 0,
-    item: {
-      content_id: "essentio-collection",
-      content_name: "Essentio collection",
-      content_category: "Landing page",
-      quantity: 1,
-      price: 0,
     },
   };
 }
@@ -161,6 +149,16 @@ const comparisons = [
     ],
   },
 ];
+
+function buildCollectionCheckout() {
+  const items = products.map((product) => buildTikTokItem(product).item);
+  const total = items.reduce((sum, item) => sum + (item.price || 0), 0);
+  return {
+    price: total,
+    items,
+    number_of_items: items.length,
+  };
+}
 
 const benefits = [
   "Same-day delivery in Lagos, Abuja & PH",
@@ -378,19 +376,34 @@ export default function Home() {
 
   function trackOrderButtonClick(product) {
     const selectedProduct = product ?? null;
-    const { price, item } = selectedProduct
-      ? buildTikTokItem(selectedProduct)
-      : buildCollectionCheckoutItem();
+    const checkout = selectedProduct
+      ? (() => {
+          const { price, item } = buildTikTokItem(selectedProduct);
+          return {
+            price,
+            items: [item],
+            number_of_items: 1,
+            content_name: selectedProduct.title,
+            content_category: selectedProduct.eyebrow,
+          };
+        })()
+      : {
+          ...buildCollectionCheckout(),
+          content_name: "Essentio Smart Wallet and Passport Holder",
+          content_category: "Essentio product collection",
+        };
 
     if (selectedProduct) {
       trackViewContent(selectedProduct);
     }
 
     tiktok.initiateCheckout({
-      total_price: price,
+      total_price: checkout.price,
       currency: "NGN",
-      number_of_items: 1,
-      contents: [item],
+      number_of_items: checkout.number_of_items,
+      contents: checkout.items,
+      content_name: checkout.content_name,
+      content_category: checkout.content_category,
     });
   }
 

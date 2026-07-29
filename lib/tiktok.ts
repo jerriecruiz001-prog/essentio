@@ -4,6 +4,7 @@ export interface TiktokContentItem {
   content_id: string;
   content_name?: string;
   content_category?: string;
+  content_type?: "product" | "product_group";
   quantity?: number;
   price?: number;
 }
@@ -40,6 +41,9 @@ export interface InitiateCheckoutParams {
   contents?: TiktokContentItem[];
   content_type?: "product" | "product_group";
   value?: number;
+  content_ids?: string[];
+  content_name?: string;
+  content_category?: string;
 }
 
 export interface PurchaseParams {
@@ -63,6 +67,8 @@ export type TiktokStandardEventName =
   | "AddToCart"
   | "InitiateCheckout"
   | "Purchase"
+  | "CompletePayment"
+  | "PlaceAnOrder"
   | "AddToWishlist"
   | "AddPaymentInfo"
   | "Search"
@@ -98,7 +104,8 @@ export interface TiktokBrowserPixelApi {
   page: (params?: Record<string, unknown>) => void;
   track: (
     event: TiktokStandardEventName | string,
-    params?: Record<string, unknown>
+    params?: Record<string, unknown>,
+    options?: { event_id?: string }
   ) => void;
   identify: (params: IdentifyParams) => void;
   load: (pixelId: string, options?: Record<string, unknown>) => void;
@@ -130,6 +137,9 @@ const PIXEL_ID_ENV = process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID;
 const PIXEL_SDK_URL =
   "https://analytics.tiktok.com/i18n/pixel/events.js";
 const DEDUPE_TTL_MS = 1500;
+const TTCLID_COOKIE = "ttclid";
+const TTP_COOKIE = "_ttp";
+const TEST_EVENT_QUERY_PARAMS = ["tt_test_event_code", "test_event_code"];
 
 type TrackedEventKey = string;
 
@@ -192,6 +202,126 @@ function isBrowser(): boolean {
   );
 }
 
+function getCookie(name: string): string | undefined {
+  if (!isBrowser()) return undefined;
+  const match = document.cookie.match(
+    new RegExp(`(?:^|; )${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}=([^;]*)`)
+  );
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
+function setCookie(name: string, value: string, days = 90): void {
+  if (!isBrowser()) return;
+  const maxAge = days * 24 * 60 * 60;
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+
+function captureTtclidFromUrl(): string | undefined {
+  if (!isBrowser()) return undefined;
+  try {
+    const url = new URL(window.location.href);
+    const ttclid = url.searchParams.get("ttclid")?.trim();
+    if (ttclid) {
+      setCookie(TTCLID_COOKIE, ttclid);
+      try {
+        window.sessionStorage.setItem(TTCLID_COOKIE, ttclid);
+      } catch {
+        /* ignore */
+      }
+      return ttclid;
+    }
+  } catch {
+    /* ignore */
+  }
+  return undefined;
+}
+
+function getTtclid(): string | undefined {
+  const fromUrl = captureTtclidFromUrl();
+  if (fromUrl) return fromUrl;
+  const fromCookie = getCookie(TTCLID_COOKIE);
+  if (fromCookie) return fromCookie;
+  try {
+    return window.sessionStorage.getItem(TTCLID_COOKIE) || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function getTtp(): string | undefined {
+  return getCookie(TTP_COOKIE);
+}
+
+function getTestEventCodeFromUrl(): string | undefined {
+  if (!isBrowser()) return undefined;
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.NEXT_PUBLIC_TIKTOK_ENABLE_TEST_EVENTS !== "true"
+  ) {
+    return undefined;
+  }
+  try {
+    const url = new URL(window.location.href);
+    return (
+      url.searchParams.get("tt_test_event_code")?.trim() ||
+      url.searchParams.get("test_event_code")?.trim() ||
+      undefined
+    );
+  } catch {
+    return undefined;
+  }
+}
+
+function allowTestEvents(): boolean {
+  return (
+    process.env.NODE_ENV !== "production" ||
+    process.env.NEXT_PUBLIC_TIKTOK_ENABLE_TEST_EVENTS === "true"
+  );
+}
+
+function sanitizeUrlForProduction(value: string): string {
+  if (allowTestEvents()) return value;
+  try {
+    const url = new URL(value);
+    for (const param of TEST_EVENT_QUERY_PARAMS) {
+      url.searchParams.delete(param);
+    }
+    return url.toString();
+  } catch {
+    return value;
+  }
+}
+
+function sanitizeSearchForProduction(value: string): string {
+  if (allowTestEvents() || !value) return value;
+  try {
+    const params = new URLSearchParams(value.startsWith("?") ? value.slice(1) : value);
+    for (const param of TEST_EVENT_QUERY_PARAMS) {
+      params.delete(param);
+    }
+    const next = params.toString();
+    return value.startsWith("?") ? (next ? `?${next}` : "") : next;
+  } catch {
+    return value;
+  }
+}
+
+export function getEventContext(): Record<string, unknown> {
+  if (!isBrowser()) return {};
+  const pageUrl = sanitizeUrlForProduction(window.location.href);
+  return {
+    page_url: pageUrl,
+    event_source_url: pageUrl,
+    page_path: window.location.pathname,
+    page_search: sanitizeSearchForProduction(window.location.search),
+    page_title: document.title,
+    page_referrer: document.referrer || undefined,
+    ttclid: getTtclid(),
+    ttp: getTtp(),
+    test_event_code: getTestEventCodeFromUrl(),
+  };
+}
+
 function getTiktokPixelId(): string | undefined {
   if (isBrowser()) {
     const runtime = (window as unknown as Record<string, unknown>)[
@@ -212,7 +342,8 @@ function eventKey(
 ): TrackedEventKey {
   if (!params) return event;
   try {
-    const stable = JSON.stringify(params, Object.keys(params).sort());
+    const { event_id: _eventId, ...rest } = params;
+    const stable = JSON.stringify(rest, Object.keys(rest).sort());
     return `${event}:${stable}`;
   } catch {
     return event;
@@ -329,6 +460,7 @@ function installPixelScript(): void {
     ttq.load(pixelId);
   }
 
+  captureTtclidFromUrl();
   sdkInstalled = true;
 }
 
@@ -359,24 +491,23 @@ export function registerEventsBackend(
 
 function dispatchToBackends(
   fn: (b: TiktokEventsBackend) => void | Promise<void>
-): void {
+): Promise<void> {
   if (backendPlugins.length === 0) {
     pendingBackendDispatches = pendingBackendDispatches.concat(fn).slice(-25);
-    return;
+    return Promise.resolve();
   }
-  for (const b of backendPlugins) {
-    try {
-      Promise.resolve(fn(b)).catch((err) => {
+
+  return Promise.all(
+    backendPlugins.map(async (b) => {
+      try {
+        await Promise.resolve(fn(b));
+      } catch (err) {
         if (process.env.NODE_ENV !== "production") {
           console.error("[tiktok] backend dispatch error:", err);
         }
-      });
-    } catch (err) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error("[tiktok] backend dispatch error:", err);
       }
-    }
-  }
+    })
+  ).then(() => undefined);
 }
 
 export function init(): void {
@@ -384,148 +515,204 @@ export function init(): void {
   installPixelScript();
 }
 
-export function page(params?: Record<string, unknown>): void {
-  if (!isBrowser()) return;
+function withContext(params: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    ...params,
+    ...getEventContext(),
+  };
+}
+
+export function page(params?: Record<string, unknown>): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
   init();
+  const eventParams = ensureEventId(withContext(params || {}));
+  const { event_id: _eventId, ...pageParams } = eventParams;
+
   const ttq = window.ttq;
   if (ttq && typeof ttq.page === "function") {
     try {
-      ttq.page(params || {});
+      ttq.page(pageParams);
     } catch (err) {
       if (process.env.NODE_ENV !== "production") {
         console.warn("[tiktok] page() failed:", err);
       }
     }
   }
-  dispatchToBackends((b) => {
-    if (typeof b.page === "function") return b.page(params || {});
-    return b.track("PageView", params || {});
+
+  return dispatchToBackends((b) => {
+    if (typeof b.page === "function") return b.page(eventParams);
+    return b.track("PageView", eventParams);
   });
 }
 
 function track(
   event: TiktokStandardEventName | string,
   params: Record<string, unknown> = {}
-): void {
-  if (!isBrowser()) return;
-  if (isDuplicateEvent(eventKey(event, params))) {
+): Promise<void> {
+  if (!isBrowser()) return Promise.resolve();
+  const contextualParams = withContext(params);
+  if (isDuplicateEvent(eventKey(event, contextualParams))) {
     if (process.env.NODE_ENV !== "production") {
       console.debug("[tiktok] deduped:", event);
     }
-    return;
+    return Promise.resolve();
   }
-  const eventParams = ensureEventId(params);
+
+  const eventParams = ensureEventId(contextualParams);
+  const { event_id: eventId, ...properties } = eventParams;
+
   init();
   const ttq = window.ttq;
   if (ttq && typeof ttq.track === "function") {
     try {
-      ttq.track(event, eventParams);
+      // TikTok requires event_id as the 3rd argument for Pixel ↔ Events API dedupe.
+      ttq.track(event, properties, { event_id: String(eventId) });
     } catch (err) {
       if (process.env.NODE_ENV !== "production") {
         console.warn(`[tiktok] track(${event}) failed:`, err);
       }
     }
   }
-  dispatchToBackends((b) => b.track(event, eventParams));
+
+  return dispatchToBackends((b) => b.track(event, eventParams));
 }
 
-export function viewContent(p: ViewContentParams): void {
-  const contents =
+function normalizeContents(
+  contents: TiktokContentItem[],
+  contentType: "product" | "product_group" = "product"
+): TiktokContentItem[] {
+  return contents.map((item) => ({
+    ...item,
+    content_type: item.content_type ?? contentType,
+    quantity: Math.max(1, item.quantity ?? 1),
+  }));
+}
+
+export function viewContent(p: ViewContentParams): Promise<void> {
+  const contentType = p.content_type ?? "product";
+  const contents = normalizeContents(
     p.contents ??
-    ([
-      {
-        content_id: p.content_id,
-        content_name: p.content_name ?? p.product_name,
-        content_category: p.content_category ?? p.category,
-        quantity: 1,
-        price: p.price,
-      },
-    ] as TiktokContentItem[]);
-  track("ViewContent", {
+      [
+        {
+          content_id: p.content_id,
+          content_name: p.content_name ?? p.product_name,
+          content_category: p.content_category ?? p.category,
+          quantity: 1,
+          price: p.price,
+        },
+      ],
+    contentType
+  );
+
+  return track("ViewContent", {
+    contents,
+    content_ids: contents.map((item) => item.content_id),
+    content_type: contentType,
     content_id: p.content_id,
-    content_type: p.content_type ?? "product",
     content_name: p.content_name ?? p.product_name,
     content_category: p.content_category ?? p.category,
-    product_name: p.product_name,
-    category: p.category,
-    price: p.price,
     currency: p.currency,
     value: p.value ?? p.price,
-    contents,
   });
 }
 
-export function addToCart(p: AddToCartParams): void {
+export function addToCart(p: AddToCartParams): Promise<void> {
   const qty = Math.max(1, p.quantity || 1);
-  const contents =
+  const contentType = p.content_type ?? "product";
+  const contents = normalizeContents(
     p.contents ??
-    ([
-      {
-        content_id: p.content_id,
-        content_name: p.product_name,
-        content_category: p.content_category,
-        quantity: qty,
-        price: p.price,
-      },
-    ] as TiktokContentItem[]);
-  track("AddToCart", {
+      [
+        {
+          content_id: p.content_id,
+          content_name: p.product_name,
+          content_category: p.content_category,
+          quantity: qty,
+          price: p.price,
+        },
+      ],
+    contentType
+  );
+
+  return track("AddToCart", {
+    contents,
+    content_ids: contents.map((item) => item.content_id),
+    content_type: contentType,
     content_id: p.content_id,
-    content_type: p.content_type ?? "product",
-    content_category: p.content_category,
-    product_name: p.product_name,
-    quantity: qty,
-    price: p.price,
     currency: p.currency,
     value: p.value ?? p.price * qty,
-    contents,
   });
 }
 
-export function initiateCheckout(p: InitiateCheckoutParams): void {
-  track("InitiateCheckout", {
-    content_type: p.content_type ?? "product_group",
-    total_price: p.total_price,
-    value: p.value ?? p.total_price,
+export function initiateCheckout(p: InitiateCheckoutParams): Promise<void> {
+  const contents = normalizeContents(p.contents ?? [], "product");
+  const contentIds =
+    p.content_ids?.filter(Boolean) ??
+    contents.map((item) => item.content_id).filter(Boolean);
+  const contentType =
+    p.content_type ?? (contentIds.length > 1 ? "product_group" : "product");
+  const value = p.value ?? p.total_price;
+  const contentName =
+    p.content_name ??
+    (contents.length === 1
+      ? contents[0]?.content_name
+      : contents.map((item) => item.content_name).filter(Boolean).join(", "));
+  const contentCategory =
+    p.content_category ??
+    (contents.length === 1
+      ? contents[0]?.content_category
+      : contents.map((item) => item.content_category).filter(Boolean).join(", "));
+
+  return track("InitiateCheckout", {
+    contents: normalizeContents(contents, contentType),
+    content_ids: contentIds,
+    content_type: contentType,
+    content_id: contentIds.length === 1 ? contentIds[0] : undefined,
+    content_name: contentName || undefined,
+    content_category: contentCategory || undefined,
     currency: p.currency,
-    number_of_items: p.number_of_items,
-    contents: p.contents ?? [],
+    value,
+    quantity: p.number_of_items,
   });
 }
 
-export function purchase(p: PurchaseParams): void {
+export function purchase(p: PurchaseParams): Promise<void> {
   const PURCHASE_TTL_MS = 60_000;
   const key = `__tiktok_purchase_sent:${p.order_id}`;
   try {
     if (typeof window !== "undefined" && window.sessionStorage) {
       const existing = window.sessionStorage.getItem(key);
-      if (existing) return;
+      if (existing) return Promise.resolve();
       window.sessionStorage.setItem(key, String(Date.now() + PURCHASE_TTL_MS));
     }
     const dedupeK = `purchase:${p.order_id}`;
-    if (dedupeCache.get(dedupeK)) return;
+    if (dedupeCache.get(dedupeK)) return Promise.resolve();
     dedupeCache.set(dedupeK, Date.now());
   } catch {
     /* sessionStorage unavailable (private mode etc.) */
   }
+
+  const contentType = p.content_type ?? "product";
+  const contents = normalizeContents(p.contents, contentType);
   const qty =
     p.quantity ??
-    p.contents.reduce(
+    contents.reduce(
       (acc: number, c: TiktokContentItem) => acc + (c.quantity ?? 0),
       0
     );
-  track("Purchase", {
-    content_type: p.content_type ?? "product_group",
-    order_id: p.order_id,
-    value: p.value,
+
+  return track("CompletePayment", {
+    contents,
+    content_ids: contents.map((item) => item.content_id),
+    content_type: contentType,
     currency: p.currency,
-    contents: p.contents,
+    value: p.value,
     quantity: qty,
-    num_items: qty,
+    order_id: p.order_id,
   });
 }
 
-export function contact(params?: Record<string, unknown>): void {
-  track("Contact", params ?? {});
+export function contact(params?: Record<string, unknown>): Promise<void> {
+  return track("Contact", params ?? {});
 }
 
 export function identify(params: IdentifyParams): void {
@@ -541,7 +728,7 @@ export function identify(params: IdentifyParams): void {
       }
     }
   }
-  dispatchToBackends((b) => {
+  void dispatchToBackends((b) => {
     if (typeof b.identify === "function") return b.identify(params);
     return b.track("Identify", params as unknown as Record<string, unknown>);
   });
@@ -558,6 +745,7 @@ export const tiktok = {
   identify,
   registerEventsBackend,
   getPixelId: getTiktokPixelId,
+  getEventContext,
 };
 
 export default tiktok;

@@ -3,7 +3,7 @@ import Script from "next/script";
 import TikTokPixel from "./TikTokPixel";
 import "../styles.css";
 
-const siteUrl = "https://essentio.ng";
+const siteUrl = "https://www.shopessentio.online";
 const title = "Essentio™ — Premium Smart Wallets & Passport Holders | JCRUIZ & CO";
 const description =
   "Essentio by JCRUIZ & CO. Premium leather smart wallets and passport holders with built-in power banks, RFID blocking, and MagSafe charging. Engineered for the modern professional.";
@@ -62,7 +62,7 @@ const productSchema = [
       price: "59999",
       priceValidUntil: "2026-12-31",
       availability: "https://schema.org/InStock",
-      url: "https://essentio.ng/#smart-wallet",
+      url: `${siteUrl}/#smart-wallet`,
     },
   },
   {
@@ -78,7 +78,7 @@ const productSchema = [
       price: "54999",
       priceValidUntil: "2026-12-31",
       availability: "https://schema.org/InStock",
-      url: "https://essentio.ng/#passport-holder",
+      url: `${siteUrl}/#passport-holder`,
     },
   },
 ];
