@@ -7,6 +7,7 @@ import tiktok from "../lib/tiktok";
 
 const whatsapp =
   "https://wa.me/2347026064464?text=Hello%2C%20I%27m%20interested%20in%20Essentio%20products.%20Please%20send%20details.";
+const ORDER_REDIRECT_DELAY_MS = 300;
 
 function parsePrice(value) {
   return Number(String(value).replace(/[^\d.]/g, "")) || 0;
@@ -22,6 +23,19 @@ function buildTikTokItem(product) {
       content_category: product.eyebrow,
       quantity: 1,
       price,
+    },
+  };
+}
+
+function buildCollectionCheckoutItem() {
+  return {
+    price: 0,
+    item: {
+      content_id: "essentio-collection",
+      content_name: "Essentio collection",
+      content_category: "Landing page",
+      quantity: 1,
+      price: 0,
     },
   };
 }
@@ -332,6 +346,9 @@ export default function Home() {
   const [previewProduct, setPreviewProduct] = useState(null);
   const [variantIndex, setVariantIndex] = useState(0);
   const [imageIndex, setImageIndex] = useState(0);
+  const trackedViewContentRef = useRef(new Set());
+  const hasTrackedInitialViewRef = useRef(false);
+  const redirectTimerRef = useRef(null);
   const activeProduct = useMemo(
     () => products.find((product) => product.id === activeProductId) ?? products[0],
     [activeProductId]
@@ -339,7 +356,9 @@ export default function Home() {
   const activeVariant = previewProduct?.variants[variantIndex] ?? previewProduct?.variants[0];
   const activeImage = activeVariant?.images[imageIndex] ?? activeVariant?.images[0];
 
-  function openProductPreview(product) {
+  function trackViewContent(product) {
+    if (!product || trackedViewContentRef.current.has(product.id)) return;
+
     const { price, item } = buildTikTokItem(product);
     tiktok.viewContent({
       content_id: product.id,
@@ -349,30 +368,57 @@ export default function Home() {
       currency: "NGN",
       contents: [item],
     });
+    trackedViewContentRef.current.add(product.id);
+  }
+
+  function openProductPreview(product) {
+    trackViewContent(product);
     setPreviewProduct(product);
   }
 
-  function trackWhatsAppOrder(product) {
-    if (!product) {
-      tiktok.contact();
-      return;
+  function trackOrderButtonClick(product) {
+    const selectedProduct = product ?? null;
+    const { price, item } = selectedProduct
+      ? buildTikTokItem(selectedProduct)
+      : buildCollectionCheckoutItem();
+
+    if (selectedProduct) {
+      trackViewContent(selectedProduct);
     }
-    const { price, item } = buildTikTokItem(product);
-    tiktok.addToCart({
-      content_id: product.id,
-      product_name: product.title,
-      quantity: 1,
-      price,
-      currency: "NGN",
-      content_category: product.eyebrow,
-      contents: [item],
-    });
+
     tiktok.initiateCheckout({
       total_price: price,
       currency: "NGN",
       number_of_items: 1,
       contents: [item],
     });
+  }
+
+  function handleWhatsAppOrderClick(event, product) {
+    event.preventDefault();
+
+    const popup = window.open("", "_blank");
+    if (popup) {
+      popup.opener = null;
+    }
+
+    trackOrderButtonClick(product);
+
+    if (redirectTimerRef.current) {
+      window.clearTimeout(redirectTimerRef.current);
+    }
+
+    redirectTimerRef.current = window.setTimeout(() => {
+      if (popup && !popup.closed) {
+        popup.location.replace(whatsapp);
+        return;
+      }
+
+      const fallbackWindow = window.open(whatsapp, "_blank", "noopener,noreferrer");
+      if (!fallbackWindow) {
+        window.location.assign(whatsapp);
+      }
+    }, ORDER_REDIRECT_DELAY_MS);
   }
 
   useEffect(() => {
@@ -392,6 +438,20 @@ export default function Home() {
       document.body.style.overflow = "";
     };
   }, [previewProduct]);
+
+  useEffect(() => {
+    if (hasTrackedInitialViewRef.current) return;
+    hasTrackedInitialViewRef.current = true;
+    trackViewContent(activeProduct);
+  }, [activeProduct]);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        window.clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     setVariantIndex(0);
@@ -427,7 +487,7 @@ export default function Home() {
               className="btn btn--sm nav__cta"
               target="_blank"
               rel="noopener"
-              onClick={() => trackWhatsAppOrder(null)}
+              onClick={(event) => handleWhatsAppOrderClick(event, null)}
             >
               Order
             </a>
@@ -454,7 +514,7 @@ export default function Home() {
             className="btn"
             target="_blank"
             rel="noopener"
-            onClick={() => trackWhatsAppOrder(null)}
+            onClick={(event) => handleWhatsAppOrderClick(event, null)}
           >
             Order via WhatsApp
           </a>
@@ -738,7 +798,7 @@ export default function Home() {
               className="btn"
               target="_blank"
               rel="noopener"
-              onClick={() => trackWhatsAppOrder(null)}
+              onClick={(event) => handleWhatsAppOrderClick(event, null)}
             >
               Start order
               <ArrowIcon />
@@ -836,7 +896,7 @@ export default function Home() {
                   className="btn"
                   target="_blank"
                   rel="noopener"
-                  onClick={() => trackWhatsAppOrder(previewProduct)}
+                  onClick={(event) => handleWhatsAppOrderClick(event, previewProduct)}
                 >
                   Buy on WhatsApp
                   <ArrowIcon />

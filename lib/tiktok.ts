@@ -157,6 +157,9 @@ type TtMethodName = TtMethodTuple[number];
 
 let sdkInstalled = false;
 let backendPlugins: TiktokEventsBackend[] = [];
+let pendingBackendDispatches: Array<
+  (backend: TiktokEventsBackend) => void | Promise<void>
+> = [];
 const dedupeCache = new Map<TrackedEventKey, number>();
 
 function createEventId(): string {
@@ -333,6 +336,22 @@ export function registerEventsBackend(
   backend: TiktokEventsBackend
 ): () => void {
   backendPlugins = backendPlugins.concat(backend);
+  if (pendingBackendDispatches.length > 0) {
+    for (const dispatch of pendingBackendDispatches) {
+      try {
+        Promise.resolve(dispatch(backend)).catch((err) => {
+          if (process.env.NODE_ENV !== "production") {
+            console.error("[tiktok] backend dispatch error:", err);
+          }
+        });
+      } catch (err) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[tiktok] backend dispatch error:", err);
+        }
+      }
+    }
+    pendingBackendDispatches = [];
+  }
   return () => {
     backendPlugins = backendPlugins.filter((b) => b !== backend);
   };
@@ -341,7 +360,10 @@ export function registerEventsBackend(
 function dispatchToBackends(
   fn: (b: TiktokEventsBackend) => void | Promise<void>
 ): void {
-  if (backendPlugins.length === 0) return;
+  if (backendPlugins.length === 0) {
+    pendingBackendDispatches = pendingBackendDispatches.concat(fn).slice(-25);
+    return;
+  }
   for (const b of backendPlugins) {
     try {
       Promise.resolve(fn(b)).catch((err) => {
