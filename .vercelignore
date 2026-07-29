@@ -2,6 +2,9 @@ node_modules
 build
 dist
 .git
+.env*
+tsconfig.tsbuildinfo
+vercel.json
 .trae
 .log
 .figma
