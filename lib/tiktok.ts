@@ -117,6 +117,14 @@ export interface TiktokBrowserPixelApi {
   holdConsent: () => void;
   revokeConsent: () => void;
   grantConsent: () => void;
+  methods?: readonly string[];
+  setAndDefer?: (
+    target: Record<string, unknown>,
+    method: TtMethodName
+  ) => void;
+  _i?: Record<string, unknown>;
+  _t?: Record<string, number>;
+  _o?: Record<string, unknown>;
   [method: string]: unknown;
 }
 
@@ -212,13 +220,16 @@ function ensureBrowserTtq(): TiktokBrowserPixelApi | undefined {
   }
 
   if (!w.ttq) {
-    const ttq: Partial<TiktokBrowserPixelApi> = [] as unknown as Partial<TiktokBrowserPixelApi>;
+    const ttq = [] as unknown as TiktokBrowserPixelApi;
 
     const setAndDefer = (obj: Record<string, unknown>, method: TtMethodName): void => {
-      (obj as Record<string, unknown>)[method] = function (...args: unknown[]) {
+      obj[method] = function (...args: unknown[]) {
         (obj as unknown as Array<unknown[]>).push([method, ...args]);
       };
     };
+
+    ttq.methods = TT_METHODS;
+    ttq.setAndDefer = setAndDefer;
 
     for (let i = 0; i < TT_METHODS.length; i++) {
       setAndDefer(ttq as unknown as Record<string, unknown>, TT_METHODS[i]);
@@ -227,17 +238,45 @@ function ensureBrowserTtq(): TiktokBrowserPixelApi | undefined {
     (ttq as unknown as Record<string, unknown>).instance = function instanceFn(
       instanceName: string
     ): TiktokBrowserPixelApi {
-      const store = ttq as unknown as Record<string, unknown>;
-      store._i = (store._i as Record<string, unknown> | undefined) || {};
-      const instance = ((store._i as Record<string, unknown>)[instanceName] ||
-        []) as unknown as Record<string, unknown>;
+      ttq._i = ttq._i || {};
+      const instance = (ttq._i[instanceName] || []) as unknown as Record<string, unknown>;
       for (let n = 0; n < TT_METHODS.length; n++) {
         setAndDefer(instance, TT_METHODS[n]);
       }
+      ttq._i[instanceName] = instance;
       return instance as unknown as TiktokBrowserPixelApi;
     };
 
-    w.ttq = ttq as TiktokBrowserPixelApi;
+    ttq.load = function load(pixelId: string, options?: Record<string, unknown>): void {
+      ttq._i = ttq._i || {};
+      ttq._i[pixelId] = ttq._i[pixelId] || [];
+      (ttq._i[pixelId] as Record<string, unknown>)._u = PIXEL_SDK_URL;
+
+      ttq._t = ttq._t || {};
+      ttq._t[pixelId] = Date.now();
+
+      ttq._o = ttq._o || {};
+      ttq._o[pixelId] = options || {};
+
+      const existing = document.querySelector<HTMLScriptElement>(
+        `script[data-tiktok-sdk="${pixelId}"]`
+      );
+      if (!existing) {
+        const script = document.createElement("script");
+        script.async = true;
+        script.type = "text/javascript";
+        script.dataset.tiktokSdk = pixelId;
+        script.src = `${PIXEL_SDK_URL}?sdkid=${encodeURIComponent(pixelId)}&lib=${t}`;
+        const first = document.getElementsByTagName("script")[0];
+        if (first?.parentNode) {
+          first.parentNode.insertBefore(script, first);
+        } else {
+          document.head.appendChild(script);
+        }
+      }
+    };
+
+    w.ttq = ttq;
   }
 
   return w.ttq;
@@ -260,36 +299,6 @@ function installPixelScript(): void {
 
   const ttq = ensureBrowserTtq();
   if (!ttq) return;
-
-  const store = ttq as unknown as Record<string, unknown>;
-  store._i = (store._i as Record<string, unknown> | undefined) || {};
-  (store._i as Record<string, unknown>)[pixelId] = [];
-  ((store._i as Record<string, unknown>)[pixelId] as Record<string, unknown>)._u =
-    PIXEL_SDK_URL;
-
-  store._t = (store._t as Record<string, number> | undefined) || {};
-  (store._t as Record<string, number>)[pixelId] = Date.now();
-
-  store._o = (store._o as Record<string, unknown> | undefined) || {};
-  (store._o as Record<string, unknown>)[pixelId] = {};
-
-  const existing = document.querySelector<HTMLScriptElement>(
-    `script[data-tiktok-sdk="true"]`
-  );
-  if (!existing) {
-    const script = document.createElement("script");
-    script.type = "text/javascript";
-    script.async = true;
-    script.defer = true;
-    script.dataset.tiktokSdk = "true";
-    script.src = `${PIXEL_SDK_URL}?sdkid=${encodeURIComponent(pixelId)}&lib=ttq`;
-    const first = document.getElementsByTagName("script")[0];
-    if (first && first.parentNode) {
-      first.parentNode.insertBefore(script, first);
-    } else {
-      document.head.appendChild(script);
-    }
-  }
 
   if (typeof ttq.load === "function") {
     ttq.load(pixelId);

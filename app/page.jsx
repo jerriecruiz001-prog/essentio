@@ -6,10 +6,24 @@ import ClientInteractions from "./ClientInteractions";
 import tiktok from "../lib/tiktok";
 
 const whatsapp =
-  "https://wa.me/2348000000000?text=Hello%2C%20I%27m%20interested%20in%20Essentio%20products.%20Please%20send%20details.";
+  "https://wa.me/2347026064464?text=Hello%2C%20I%27m%20interested%20in%20Essentio%20products.%20Please%20send%20details.";
 
 function parsePrice(value) {
   return Number(String(value).replace(/[^\d.]/g, "")) || 0;
+}
+
+function buildTikTokItem(product) {
+  const price = parsePrice(product.price);
+  return {
+    price,
+    item: {
+      content_id: product.id,
+      content_name: product.title,
+      content_category: product.eyebrow,
+      quantity: 1,
+      price,
+    },
+  };
 }
 
 const products = [
@@ -326,12 +340,14 @@ export default function Home() {
   const activeImage = activeVariant?.images[imageIndex] ?? activeVariant?.images[0];
 
   function openProductPreview(product) {
+    const { price, item } = buildTikTokItem(product);
     tiktok.viewContent({
       content_id: product.id,
       product_name: product.title,
       category: product.eyebrow,
-      price: parsePrice(product.price),
+      price,
       currency: "NGN",
+      contents: [item],
     });
     setPreviewProduct(product);
   }
@@ -341,20 +357,21 @@ export default function Home() {
       tiktok.contact();
       return;
     }
-    const price = parsePrice(product.price);
+    const { price, item } = buildTikTokItem(product);
+    tiktok.addToCart({
+      content_id: product.id,
+      product_name: product.title,
+      quantity: 1,
+      price,
+      currency: "NGN",
+      content_category: product.eyebrow,
+      contents: [item],
+    });
     tiktok.initiateCheckout({
       total_price: price,
       currency: "NGN",
       number_of_items: 1,
-      contents: [
-        {
-          content_id: product.id,
-          content_name: product.title,
-          content_category: product.eyebrow,
-          quantity: 1,
-          price,
-        },
-      ],
+      contents: [item],
     });
   }
 
