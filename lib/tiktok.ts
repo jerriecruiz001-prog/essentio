@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export type TiktokCurrency = "NGN" | "USD" | "EUR" | "GBP" | string;
 
 export interface TiktokContentItem {
