@@ -166,6 +166,13 @@ const benefits = [
   "Worldwide shipping available",
 ];
 
+const trustSignals = [
+  { icon: "delivery", label: "Nationwide Delivery" },
+  { icon: "bolt", label: "Same-Day Delivery Available in Abuja & Lagos" },
+  { icon: "payment", label: "Pay on Delivery Available in Abuja & Lagos" },
+  { icon: "lock", label: "Secure WhatsApp Ordering" },
+];
+
 const faqs = [
   {
     question: "How long does the battery take to charge?",
@@ -216,6 +223,55 @@ function FindMyIcon() {
       <circle cx="12" cy="12" r="2.4" fill="currentColor" stroke="none" />
       <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21" />
     </svg>
+  );
+}
+
+function TrustIcon({ type }) {
+  if (type === "bolt") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" />
+      </svg>
+    );
+  }
+
+  if (type === "payment") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="6" width="18" height="12" rx="2" />
+        <path d="M3 10h18M7 15h4" />
+      </svg>
+    );
+  }
+
+  if (type === "lock") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="5" y="10" width="14" height="10" rx="2" />
+        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z" />
+      <circle cx="7" cy="18" r="2" />
+      <circle cx="17" cy="18" r="2" />
+    </svg>
+  );
+}
+
+function TrustSection() {
+  return (
+    <div className="trust-section" aria-label="Ordering and delivery assurances">
+      {trustSignals.map((signal) => (
+        <div className="trust-section__item" key={signal.label}>
+          <TrustIcon type={signal.icon} />
+          <span>{signal.label}</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -940,7 +996,18 @@ export default function Home() {
                   <ArrowIcon />
                 </a>
               </div>
+              <TrustSection />
             </div>
+            <a
+              href={whatsapp}
+              className="btn buy-modal__sticky-cta"
+              target="_blank"
+              rel="noopener"
+              onClick={(event) => handleWhatsAppOrderClick(event, previewProduct)}
+            >
+              Buy on WhatsApp
+              <ArrowIcon />
+            </a>
           </div>
         </div>
       ) : null}
