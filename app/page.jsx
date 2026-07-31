@@ -9,6 +9,13 @@ const whatsapp =
   "https://wa.me/2347026064464?text=Hello%2C%20I%27m%20interested%20in%20Essentio%20products.%20Please%20send%20details.";
 const ORDER_REDIRECT_DELAY_MS = 700;
 
+function buildWhatsAppUrl(product) {
+  if (!product) return whatsapp;
+
+  const message = `Hello, I'm interested in the Essentio ${product.eyebrow} (${product.price}). Please send details.`;
+  return `https://wa.me/2347026064464?text=${encodeURIComponent(message)}`;
+}
+
 function parsePrice(value) {
   return Number(String(value).replace(/[^\d.]/g, "")) || 0;
 }
@@ -200,6 +207,15 @@ function ArrowIcon() {
   );
 }
 
+function WhatsAppIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M19.1 4.9A9.9 9.9 0 0 0 3.6 16.8L2.5 21.5l4.8-1.1A9.9 9.9 0 0 0 21.5 12a9.8 9.8 0 0 0-2.4-7.1Z" />
+      <path d="M8.6 7.8c-.2-.5-.4-.5-.7-.5h-.6c-.2 0-.6.1-.9.4-.3.3-1.1 1.1-1.1 2.6s1.1 3 1.2 3.2c.2.2 2.1 3.4 5.3 4.6 2.6 1 3.2.8 3.7.8.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.7-.4l-2.1-1c-.3-.1-.6-.2-.8.2-.2.3-.9 1.1-1.1 1.3-.2.2-.4.2-.8.1-.3-.2-1.4-.5-2.7-1.7-1-1-1.7-2.1-1.9-2.4-.2-.4 0-.6.2-.8.1-.1.3-.4.5-.6.1-.2.2-.3.3-.6.1-.2 0-.4 0-.6l-1-2.4Z" />
+    </svg>
+  );
+}
+
 function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -272,6 +288,26 @@ function TrustSection() {
         </div>
       ))}
     </div>
+  );
+}
+
+function WhatsAppOrderLink({
+  product,
+  onOrder,
+  className = "btn btn--whatsapp",
+  children = "Buy on WhatsApp",
+}) {
+  return (
+    <a
+      href={buildWhatsAppUrl(product)}
+      className={className}
+      target="_blank"
+      rel="noopener"
+      onClick={(event) => onOrder(event, product)}
+    >
+      <WhatsAppIcon />
+      {children}
+    </a>
   );
 }
 
@@ -465,6 +501,7 @@ export default function Home() {
 
   function handleWhatsAppOrderClick(event, product) {
     event.preventDefault();
+    const orderUrl = buildWhatsAppUrl(product);
 
     const popup = window.open("", "_blank");
     if (popup) {
@@ -479,13 +516,13 @@ export default function Home() {
 
     redirectTimerRef.current = window.setTimeout(() => {
       if (popup && !popup.closed) {
-        popup.location.replace(whatsapp);
+        popup.location.replace(orderUrl);
         return;
       }
 
-      const fallbackWindow = window.open(whatsapp, "_blank", "noopener,noreferrer");
+      const fallbackWindow = window.open(orderUrl, "_blank", "noopener,noreferrer");
       if (!fallbackWindow) {
-        window.location.assign(whatsapp);
+        window.location.assign(orderUrl);
       }
     }, ORDER_REDIRECT_DELAY_MS);
   }
@@ -620,11 +657,6 @@ export default function Home() {
                   >
                     <div className="hero__switcher-head">
                       <span>{product.eyebrow}</span>
-                      <span className="discount-badge discount-badge--sm">-{product.discount}</span>
-                    </div>
-                    <div className="hero__switcher-prices">
-                      <strong>{product.price}</strong>
-                      <em className="price-old price-old--sm">{product.oldPrice}</em>
                     </div>
                   </button>
                 ))}
@@ -652,11 +684,6 @@ export default function Home() {
               <div className="hero__caption">
                 <div className="hero__caption-top">
                   <span>{activeProduct.eyebrow}</span>
-                  <span className="discount-badge discount-badge--sm">-{activeProduct.discount}</span>
-                </div>
-                <div className="hero__caption-prices">
-                  <strong>{activeProduct.price}</strong>
-                  <em className="price-old price-old--sm">{activeProduct.oldPrice}</em>
                 </div>
               </div>
             </div>
@@ -721,12 +748,14 @@ export default function Home() {
                         <span className="price">{product.price}</span>
                         <span className="discount-badge discount-badge--sm">-{product.discount}</span>
                       </div>
-                      <span className="price-old">{product.oldPrice}</span>
                     </div>
-                    <button className="btn btn--sm" type="button" onClick={() => openProductPreview(product)}>
-                      View & buy
-                    </button>
+                    <WhatsAppOrderLink
+                      product={product}
+                      onOrder={handleWhatsAppOrderClick}
+                      className="btn btn--whatsapp btn--sm"
+                    />
                   </div>
+                  <TrustSection />
                 </article>
               ))}
             </div>
@@ -983,31 +1012,16 @@ export default function Home() {
                     <span className="price price--lg">{previewProduct.price}</span>
                     <span className="discount-badge discount-badge--lg">-{previewProduct.discount}</span>
                   </div>
-                  <span className="price-old price-old--lg">{previewProduct.oldPrice}</span>
                 </div>
-                <a
-                  href={whatsapp}
-                  className="btn"
-                  target="_blank"
-                  rel="noopener"
-                  onClick={(event) => handleWhatsAppOrderClick(event, previewProduct)}
-                >
-                  Buy on WhatsApp
-                  <ArrowIcon />
-                </a>
+                <WhatsAppOrderLink product={previewProduct} onOrder={handleWhatsAppOrderClick} />
               </div>
               <TrustSection />
             </div>
-            <a
-              href={whatsapp}
-              className="btn buy-modal__sticky-cta"
-              target="_blank"
-              rel="noopener"
-              onClick={(event) => handleWhatsAppOrderClick(event, previewProduct)}
-            >
-              Buy on WhatsApp
-              <ArrowIcon />
-            </a>
+            <WhatsAppOrderLink
+              product={previewProduct}
+              onOrder={handleWhatsAppOrderClick}
+              className="btn btn--whatsapp buy-modal__sticky-cta"
+            />
           </div>
         </div>
       ) : null}
