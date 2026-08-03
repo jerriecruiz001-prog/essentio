@@ -3,18 +3,8 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import ClientInteractions from "./ClientInteractions";
+import OrderForm from "./OrderForm";
 import tiktok from "../lib/tiktok";
-
-const whatsapp =
-  "https://wa.me/2347026064464?text=Hello%2C%20I%27m%20interested%20in%20Essentio%20products.%20Please%20send%20details.";
-const ORDER_REDIRECT_DELAY_MS = 700;
-
-function buildWhatsAppUrl(product) {
-  if (!product) return whatsapp;
-
-  const message = `Hello, I'm interested in the Essentio ${product.eyebrow} (${product.price}). Please send details.`;
-  return `https://wa.me/2347026064464?text=${encodeURIComponent(message)}`;
-}
 
 function parsePrice(value) {
   return Number(String(value).replace(/[^\d.]/g, "")) || 0;
@@ -298,16 +288,10 @@ function WhatsAppOrderLink({
   children = "Buy on WhatsApp",
 }) {
   return (
-    <a
-      href={buildWhatsAppUrl(product)}
-      className={className}
-      target="_blank"
-      rel="noopener"
-      onClick={(event) => onOrder(event, product)}
-    >
+    <button type="button" className={className} onClick={() => onOrder(product)}>
       <WhatsAppIcon />
       {children}
-    </a>
+    </button>
   );
 }
 
@@ -436,9 +420,10 @@ export default function Home() {
   const [previewProduct, setPreviewProduct] = useState(null);
   const [variantIndex, setVariantIndex] = useState(0);
   const [imageIndex, setImageIndex] = useState(0);
+  const [isOrderFormOpen, setIsOrderFormOpen] = useState(false);
+  const [orderFormProduct, setOrderFormProduct] = useState(null);
   const trackedViewContentRef = useRef(new Set());
   const hasTrackedInitialViewRef = useRef(false);
-  const redirectTimerRef = useRef(null);
   const activeProduct = useMemo(
     () => products.find((product) => product.id === activeProductId) ?? products[0],
     [activeProductId]
@@ -499,32 +484,32 @@ export default function Home() {
     });
   }
 
-  function handleWhatsAppOrderClick(event, product) {
-    event.preventDefault();
-    const orderUrl = buildWhatsAppUrl(product);
+  function openOrderForm(product) {
+    trackOrderButtonClick(product ?? null);
+    setOrderFormProduct(product ?? null);
+    setIsOrderFormOpen(true);
+  }
 
-    const popup = window.open("", "_blank");
-    if (popup) {
-      popup.opener = null;
-    }
+  function closeOrderForm() {
+    setIsOrderFormOpen(false);
+  }
 
-    trackOrderButtonClick(product);
+  function handleOrderFromPreview(product) {
+    setPreviewProduct(null);
+    openOrderForm(product);
+  }
 
-    if (redirectTimerRef.current) {
-      window.clearTimeout(redirectTimerRef.current);
-    }
-
-    redirectTimerRef.current = window.setTimeout(() => {
-      if (popup && !popup.closed) {
-        popup.location.replace(orderUrl);
-        return;
-      }
-
-      const fallbackWindow = window.open(orderUrl, "_blank", "noopener,noreferrer");
-      if (!fallbackWindow) {
-        window.location.assign(orderUrl);
-      }
-    }, ORDER_REDIRECT_DELAY_MS);
+  function handleOrderSubmit({ product, formData }) {
+    tiktok.contact({
+      content_id: product.id,
+      content_name: product.title,
+      content_category: product.eyebrow,
+      value: parsePrice(product.price),
+      currency: "NGN",
+      payment_method: formData.paymentLabel,
+      delivery_state: formData.state,
+      delivery_city: formData.city,
+    });
   }
 
   useEffect(() => {
@@ -550,14 +535,6 @@ export default function Home() {
     hasTrackedInitialViewRef.current = true;
     trackViewContent(activeProduct);
   }, [activeProduct]);
-
-  useEffect(() => {
-    return () => {
-      if (redirectTimerRef.current) {
-        window.clearTimeout(redirectTimerRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     setVariantIndex(0);
@@ -588,15 +565,13 @@ export default function Home() {
                 <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.7 6.7 0 0 0 21 12.8Z" />
               </svg>
             </button>
-            <a
-              href={whatsapp}
+            <button
+              type="button"
               className="btn btn--sm nav__cta"
-              target="_blank"
-              rel="noopener"
-              onClick={(event) => handleWhatsAppOrderClick(event, null)}
+              onClick={() => openOrderForm(null)}
             >
               Order
-            </a>
+            </button>
             <button className="nav__toggle" id="navToggle" aria-label="Open menu" aria-expanded="false">
               <span />
               <span />
@@ -615,15 +590,14 @@ export default function Home() {
           <a href="#faq" data-nav-close>
             FAQ
           </a>
-          <a
-            href={whatsapp}
+          <button
+            type="button"
             className="btn"
-            target="_blank"
-            rel="noopener"
-            onClick={(event) => handleWhatsAppOrderClick(event, null)}
+            data-nav-close
+            onClick={() => openOrderForm(null)}
           >
             Order via WhatsApp
-          </a>
+          </button>
         </div>
       </header>
 
@@ -751,7 +725,7 @@ export default function Home() {
                     </div>
                     <WhatsAppOrderLink
                       product={product}
-                      onOrder={handleWhatsAppOrderClick}
+                      onOrder={openOrderForm}
                       className="btn btn--whatsapp btn--sm"
                     />
                   </div>
@@ -916,16 +890,10 @@ export default function Home() {
           <div className="container cta__inner reveal">
             <p className="eyebrow">Essentio by JCRUIZ & CO</p>
             <h2>Upgrade the essentials you carry every day.</h2>
-            <a
-              href={whatsapp}
-              className="btn"
-              target="_blank"
-              rel="noopener"
-              onClick={(event) => handleWhatsAppOrderClick(event, null)}
-            >
+            <button type="button" className="btn" onClick={() => openOrderForm(null)}>
               Start order
               <ArrowIcon />
-            </a>
+            </button>
           </div>
         </section>
       </main>
@@ -1013,18 +981,26 @@ export default function Home() {
                     <span className="discount-badge discount-badge--lg">-{previewProduct.discount}</span>
                   </div>
                 </div>
-                <WhatsAppOrderLink product={previewProduct} onOrder={handleWhatsAppOrderClick} />
+                <WhatsAppOrderLink product={previewProduct} onOrder={handleOrderFromPreview} />
               </div>
               <TrustSection />
             </div>
             <WhatsAppOrderLink
               product={previewProduct}
-              onOrder={handleWhatsAppOrderClick}
+              onOrder={handleOrderFromPreview}
               className="btn btn--whatsapp buy-modal__sticky-cta"
             />
           </div>
         </div>
       ) : null}
+
+      <OrderForm
+        open={isOrderFormOpen}
+        products={products}
+        initialProduct={orderFormProduct}
+        onClose={closeOrderForm}
+        onSubmit={handleOrderSubmit}
+      />
 
       <ClientInteractions />
     </>
